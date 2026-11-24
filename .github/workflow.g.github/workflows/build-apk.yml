@@ -1,0 +1,57 @@
+name: Build Shadow Cat APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Fix project structure
+        run: |
+          mkdir -p app/src/main/assets app/src/main/java/com/shadowcat/kunai
+          cp AndroidManifest.xml app/src/main/AndroidManifest.xml
+          cp MainActivity.java app/src/main/java/com/shadowcat/kunai/MainActivity.java
+          cp index.html app/src/main/assets/index.html
+          cat > app/build.gradle <<'GRADLE'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.shadowcat.kunai'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'com.shadowcat.kunai'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 7
+                  versionName '0.7'
+              }
+          }
+          GRADLE
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        run: gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShadowCat-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
