@@ -6,20 +6,26 @@ on:
   push:
     paths:
       - 'ShadowCat_v08_fixed.html'
-      - '.github/workflows/build-apk.yml'
+      - '.github/workflows/android.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Download project
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Prepare Android project
+        shell: bash
         run: |
+          set -e
+
           mkdir -p app/src/main/assets
           cp ShadowCat_v08_fixed.html app/src/main/assets/index.html
+
           mkdir -p app/src/main/java/com/shadowcat/kunai
+
           cat > settings.gradle <<'EOF'
           pluginManagement {
               repositories {
@@ -38,18 +44,22 @@ jobs:
           rootProject.name = "ShadowCat"
           include ':app'
           EOF
+
           cat > build.gradle <<'EOF'
           plugins {
               id 'com.android.application' version '8.7.3' apply false
           }
           EOF
+
           cat > app/build.gradle <<'EOF'
           plugins {
               id 'com.android.application'
           }
+
           android {
               namespace 'com.shadowcat.kunai'
               compileSdk 35
+
               defaultConfig {
                   applicationId 'com.shadowcat.kunai'
                   minSdk 23
@@ -59,10 +69,17 @@ jobs:
               }
           }
           EOF
+
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="Shadow Cat: Kunai" android:usesCleartextTraffic="true">
-                  <activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true">
+              <application
+                  android:theme="@android:style/Theme.Material.Light.NoActionBar"
+                  android:label="Shadow Cat: Kunai"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".MainActivity"
+                      android:screenOrientation="portrait"
+                      android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN"/>
                           <category android:name="android.intent.category.LAUNCHER"/>
@@ -71,37 +88,36 @@ jobs:
               </application>
           </manifest>
           EOF
+
           cat > app/src/main/java/com/shadowcat/kunai/MainActivity.java <<'EOF'
           package com.shadowcat.kunai;
+
           import android.app.Activity;
           import android.os.Bundle;
           import android.webkit.WebView;
           import android.webkit.WebSettings;
+          import android.webkit.WebChromeClient;
+
           public class MainActivity extends Activity {
+              @Override
               public void onCreate(Bundle b) {
                   super.onCreate(b);
                   WebView w = new WebView(this);
                   WebSettings s = w.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
-                  w.setWebChromeClient(new android.webkit.WebChromeClient());
+                  w.setWebChromeClient(new WebChromeClient());
                   setContentView(w);
                   w.loadUrl("file:///android_asset/index.html");
               }
           }
           EOF
 
-      -       - name: Compile
+      - name: Build APK
         uses: gradle/gradle-build-action@v3
         with:
           gradle-version: 8.9
           arguments: assembleDebug
-
-      - name: Compile
-        run: |
-          gradle wrapper --gradle-version 8.9
-          chmod +x gradlew
-          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
