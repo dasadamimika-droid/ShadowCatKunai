@@ -1,14 +1,3 @@
 plugins {
-    id 'com.android.application'
-}
-android {
-    namespace 'com.shadowcat.kunai'
-    compileSdk 35
-    defaultConfig {
-        applicationId 'com.shadowcat.kunai'
-        minSdk 23
-        targetSdk 35
-        versionCode 7
-        versionName '0.7'
-    }
+    id 'com.android.application' version '8.7.3' apply false
 }
